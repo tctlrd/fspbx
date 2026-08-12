@@ -221,6 +221,11 @@ class LetsEncryptController extends Controller
         $this->service->saveSetting('staging', $validated['staging'] ? 'true' : 'false');
         $this->service->saveSetting('auto_renew', $validated['auto_renew'] ? 'true' : 'false');
         $this->service->saveSetting('push_secret', $validated['push_secret'] ?? '');
+
+        // Optional DNS hook and propagation timeout (used for dns-01 challenges).
+        $this->service->saveSetting('dns_hook', $validated['dns_hook'] ?? '');
+        $this->service->saveSetting('dns_propagation_seconds', (string) ($validated['dns_propagation_seconds'] ?? '30'));
+
         $this->service->saveScheduledJobToggle((bool) $validated['auto_renew']);
     }
 
