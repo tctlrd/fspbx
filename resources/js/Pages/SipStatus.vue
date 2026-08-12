@@ -281,10 +281,10 @@
                         <code class="rounded bg-gray-100 px-1">reloadcert</code> — no FreeSWITCH restart.
                     </p>
                     <ul class="mt-2 list-disc space-y-0.5 pl-5 text-xs text-gray-500">
-                        <li><strong>Validation:</strong> HTTP-01 — a token is served on port 80 from the webroot below. Multiple hostnames (SANs) are supported for failover / dual-registration setups.</li>
-                        <li><strong>Phone trust:</strong> the issuing root CA is auto-pushed to Polycom phones (<code class="rounded bg-gray-100 px-1">customCaCert2</code>) so they trust the new cert after re-provisioning.</li>
+                        <li><strong>Validation:</strong> HTTP-01 — a token is served on port 80 from the webroot below. Multiple hostnames (SANs) are supported for failover / dual-registration [...]
+                        <li><strong>Phone trust:</strong> the issuing root CA is auto-pushed to Polycom phones (<code class="rounded bg-gray-100 px-1">customCaCert2</code>) so they trust the new [...]
                         <li><strong>Renewal:</strong> auto-renews when under 30 days remain and emails the ACME account address on success and failure.</li>
-                        <li><strong>Multi-node:</strong> list the failover hostname first, then each node's direct hostname. The node the failover currently points to renews and replicates the cert to the other nodes (peers are auto-detected from the hostnames; each node skips itself). A failed replication fails the renewal so it retries — nodes never diverge.</li>
+                        <li><strong>Multi-node:</strong> list the failover hostname first, then each node's direct hostname. The node the failover currently points to renews and replicates the ce[...]
                     </ul>
                 </div>
 
@@ -358,7 +358,7 @@
                                     autocomplete="off" :error="!!tlsErrors.domain" />
                             </div>
                             <p v-if="tlsErrors.domain" class="mt-1 text-xs text-red-600">{{ tlsErrors.domain[0] }}</p>
-                            <p v-else class="mt-1 text-xs text-gray-500">Space/comma separated. For a cluster, list the failover/proxy hostname <strong>first</strong> (used to pick the active node), then each node's direct hostname. Defaults to this server's app URL host.</p>
+                            <p v-else class="mt-1 text-xs text-gray-500">Space/comma separated. For a cluster, list the failover/proxy hostname <strong>first</strong> (used to pick the active node), t[...]</p>
                         </div>
                         <div>
                             <LabelInputRequired target="tls_email" label="ACME account email" />
@@ -376,7 +376,7 @@
                                     placeholder="/var/www/fspbx/public" autocomplete="off" :error="!!tlsErrors.webroot" />
                             </div>
                             <p v-if="tlsErrors.webroot" class="mt-1 text-xs text-red-600">{{ tlsErrors.webroot[0] }}</p>
-                            <p v-else class="mt-1 text-xs text-gray-500">Document root served on port 80; tokens are written under <code class="rounded bg-gray-100 px-1">/.well-known/acme-challenge/</code>. Defaults to the app's public dir.</p>
+                            <p v-else class="mt-1 text-xs text-gray-500">Document root served on port 80; tokens are written under <code class="rounded bg-gray-100 px-1">/.well-known/acme-challenge/</code>. If you request wildcard certificates or want DNS-01 validation, configure a DNS hook below.</p>
                         </div>
                         <div class="flex flex-col justify-center gap-3">
                             <Toggle v-model="tlsStaging" label="Use staging (test) directory" description="Avoid Let's Encrypt rate limits while testing. Staging certs are not trusted by clients." />
@@ -396,7 +396,7 @@
                                     <EyeIcon v-else class="h-4 w-4" />
                                 </button>
                                 <button type="button" @click="rotateSecret" :disabled="tlsLoading"
-                                    class="inline-flex items-center gap-1 rounded-md bg-white px-2.5 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                                    class="inline-flex items-center gap-1 rounded-md bg-white px-2.5 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                                     title="Generate a new secret">
                                     <ArrowPathIcon class="h-4 w-4" />
                                     Rotate
@@ -404,6 +404,27 @@
                             </div>
                             <p v-if="tlsErrors.push_secret" class="mt-1 text-xs text-red-600">{{ tlsErrors.push_secret[0] }}</p>
                             <p v-else class="mt-1 text-xs text-gray-500">Required for multi-node — authorizes cert replication between nodes. Click Rotate to generate one.</p>
+                        </div>
+
+                        <!-- DNS hook and propagation settings -->
+                        <div>
+                            <LabelInputOptional target="tls_dns_hook" label="DNS hook (dns-01)" />
+                            <div class="mt-1">
+                                <InputField v-model="tlsConfig.dns_hook" type="text" name="tls_dns_hook"
+                                    placeholder="/usr/local/bin/dns-hook" autocomplete="off" :error="!!tlsErrors.dns_hook" />
+                            </div>
+                            <p v-if="tlsErrors.dns_hook" class="mt-1 text-xs text-red-600">{{ tlsErrors.dns_hook[0] }}</p>
+                            <p v-else class="mt-1 text-xs text-gray-500">Optional executable hook that presents/removes DNS TXT records for dns-01. The hook is invoked as: <code class="rounded bg-gray-100 px-1">&lt;hook&gt; present _acme-challenge.example.com &quot;TXTVAL&quot;</code> and <code class="rounded bg-gray-100 px-1">&lt;hook&gt; cleanup _acme-challenge.example.com &quot;TXTVAL&quot;</code>. Wildcard certificates require a DNS hook.</p>
+                        </div>
+
+                        <div>
+                            <LabelInputOptional target="tls_dns_propagation_seconds" label="DNS propagation timeout (s)" />
+                            <div class="mt-1">
+                                <InputField v-model="tlsConfig.dns_propagation_seconds" type="number" name="tls_dns_propagation_seconds"
+                                    placeholder="30" autocomplete="off" :error="!!tlsErrors.dns_propagation_seconds" />
+                            </div>
+                            <p v-if="tlsErrors.dns_propagation_seconds" class="mt-1 text-xs text-red-600">{{ tlsErrors.dns_propagation_seconds[0] }}</p>
+                            <p v-else class="mt-1 text-xs text-gray-500">Time to wait for DNS TXT propagation before attempting validation. Increase for slow DNS providers.</p>
                         </div>
                     </div>
 
@@ -413,7 +434,7 @@
                             <template v-if="!confirmingRevoke">
                                 <button
                                     type="button"
-                                    class="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50 disabled:opacity-50"
+                                    class="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50"
                                     :disabled="tlsLoading"
                                     @click="confirmingRevoke = true"
                                 >
@@ -434,7 +455,7 @@
                                 </button>
                                 <button
                                     type="button"
-                                    class="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                                    class="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                                     :disabled="tlsLoading"
                                     @click="confirmingRevoke = false"
                                 >
@@ -447,7 +468,7 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <button
                                 type="button"
-                                class="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                                class="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                                 :disabled="tlsLoading"
                                 @click="saveTlsConfig"
                             >
@@ -526,6 +547,8 @@ const tlsConfig = ref({
     account_email: "",
     webroot: "",
     push_secret: "",
+    dns_hook: "",
+    dns_propagation_seconds: 30,
     last_issued: null,
     last_revoked: null,
     last_error: null,
@@ -608,6 +631,8 @@ const applyTlsStatus = (data) => {
             account_email: data.config.account_email || "",
             webroot: data.config.webroot || "",
             push_secret: data.config.push_secret || "",
+            dns_hook: data.config.dns_hook || "",
+            dns_propagation_seconds: data.config.dns_propagation_seconds || 30,
             last_issued: data.config.last_issued || null,
             last_revoked: data.config.last_revoked || null,
             last_error: data.config.last_error || null,
@@ -649,6 +674,8 @@ const tlsSettingsPayload = () => ({
     staging: tlsStaging.value,
     auto_renew: tlsAutoRenew.value,
     push_secret: tlsConfig.value.push_secret,
+    dns_hook: tlsConfig.value.dns_hook,
+    dns_propagation_seconds: tlsConfig.value.dns_propagation_seconds,
 });
 
 const saveTlsConfig = () => {
